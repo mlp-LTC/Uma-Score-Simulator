@@ -220,7 +220,7 @@ const state = {
   searchFocused: false,
   customNextId: -1,     // negative ids for custom skills
   showCustomForm: false,
-  customForm: { name:"", bs:300, sp:200, hs:[180,160,140,130,120], type:"white", apt:[] },
+  customForm: { name:"", bs:300, sp:200, type:"white", apt:[] },
 };
 
 function handleAdd(skill){
@@ -243,6 +243,7 @@ function handleHintLvChange(id, lv){
   state.result = null;
   render();
 }
+function onHintLvChange(id, lv){ handleHintLvChange(Number(id), Number(lv)); }
 
 // 前提チェーンを末端(白)から順に並べた配列を返す [白, 金, 進化] のように
 function getChainFromRoot(sk){
@@ -371,12 +372,15 @@ function handleSolve(){
 function handleAddCustomSkill(){
   const f = state.customForm;
   if(!f.name.trim()){ alert("スキル名を入力してください"); return; }
+  const baseSp = Number(f.sp)||0;
+  // ヒントLv1〜5のSPを基礎SP×倍率で自動算出
+  const hs = [1,2,3,4,5].map(lv => Math.floor(baseSp * HINT_LV_MULT[lv]));
   const newSkill = {
     id: state.customNextId--,
     name: f.name.trim(),
     bs: Number(f.bs)||0,
-    sp: Number(f.sp)||0,
-    hs: f.hs.map(v=>Number(v)||0),
+    sp: baseSp,
+    hs,
     type: f.type,
     apt: [...f.apt],
     dart: false,
@@ -385,7 +389,7 @@ function handleAddCustomSkill(){
   };
   skillMap[newSkill.id] = newSkill;
   handleAdd(newSkill);
-  state.customForm = { name:"", bs:300, sp:200, hs:[180,160,140,130,120], type:"white", apt:[] };
+  state.customForm = { name:"", bs:300, sp:200, type:"white", apt:[] };
   state.showCustomForm = false;
   render();
 }
@@ -546,9 +550,8 @@ function renderCustomForm(){
       <label>基礎SP</label>
       <input type="number" class="inp" style="width:70px" value="${f.sp}" oninput="onCustomField('sp',this.value)">
     </div>
-    <div class="custom-form-row">
-      <label>ヒントSP</label>
-      ${[0,1,2,3,4].map(i=>`<input type="number" class="inp" style="width:55px" value="${f.hs[i]}" oninput="onCustomHsField(${i},this.value)" placeholder="Lv${i+1}">`).join('')}
+    <div class="custom-form-row" style="color:#9b8fc0;font-size:10px">
+      💡 ヒントLv1〜5のSPは基礎SP×倍率（0.9/0.8/0.7/0.65/0.6）で自動算出されます
     </div>
     <div class="custom-form-row" style="align-items:flex-start">
       <label style="margin-top:4px">適性</label>
@@ -652,7 +655,6 @@ function onPickSkill(id){ handleAdd(skillMap[id]); }
 function onRemoveSkill(id){ handleRemove(id); }
 function onToggleCustomForm(){ state.showCustomForm = !state.showCustomForm; render(); }
 function onCustomField(field, val){ state.customForm[field] = val; }
-function onCustomHsField(idx, val){ state.customForm.hs[idx] = val; }
 function onToggleCustomApt(key){ toggleCustomApt(key); }
 function onAddCustomSkill(){ handleAddCustomSkill(); }
 
